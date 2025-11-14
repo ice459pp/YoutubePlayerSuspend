@@ -7,7 +7,7 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     input { margin: 5px 0; padding: 6px; width: 300px; }
-    button { padding: 8px 16px; }
+    button { padding: 8px 16px; margin-right: 8px; }
   </style>
 </head>
 <body>
@@ -23,6 +23,8 @@
   <input id="pauseSeconds" type="number" value="1" /><br>
 
   <button onclick="loadVideo()">載入影片</button>
+  <button onclick="startLoop()">開始</button>
+  <button onclick="stopLoop()">暫停</button>
 
   <div id="player" style="margin-top:20px;"></div>
 
@@ -51,19 +53,24 @@
     }
 
     function loadVideo() {
+      stopLoop();
       const url = document.getElementById('urlInput').value;
       const vid = extractVideoId(url);
       if (!vid) { alert('網址無效'); return; }
       player.loadVideoById(vid);
-      startLoop();
+    }
+
+    function stopLoop() {
+      clearTimeout(playTimer);
+      clearTimeout(pauseTimer);
+      player.pauseVideo();
     }
 
     function startLoop() {
+      stopLoop();
+
       const playSec = Number(document.getElementById('playSeconds').value);
       const pauseSec = Number(document.getElementById('pauseSeconds').value);
-
-      clearTimeout(playTimer);
-      clearTimeout(pauseTimer);
 
       function playPhase() {
         player.playVideo();
