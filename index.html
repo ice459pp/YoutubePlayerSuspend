@@ -32,14 +32,26 @@
     let player;
     let playTimer = null;
     let pauseTimer = null;
+    let pendingStart = false; // 等待播放器 ready 後自動啟動播放
 
+    // YouTube Iframe API 載入完成後，初始化播放器
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
         height: '360',
         width: '640',
         videoId: '',
-        events: {}
+        events: {
+          onReady: onPlayerReady
+        }
       });
+    }
+
+    function onPlayerReady() {
+      // 若 loadVideo() 已要求開始循環，則此時啟動
+      if (pendingStart) {
+        pendingStart = false;
+        startLoop();
+      }
     }
 
     function extractVideoId(url) {
@@ -47,30 +59,38 @@
         const u = new URL(url);
         if (u.hostname.includes('youtu.be')) return u.pathname.substring(1);
         return u.searchParams.get('v');
-      } catch (e) {
+      } catch {
         return '';
       }
     }
 
     function loadVideo() {
-      stopLoop();
+      stopLoop(); // 載入新影片前先停止
+
       const url = document.getElementById('urlInput').value;
       const vid = extractVideoId(url);
-      if (!vid) { alert('網址無效'); return; }
+
+      if (!vid) {
+        alert('網址無效');
+        return;
+      }
+
+      pendingStart = true; // 等待播放器 ready 後開始
       player.loadVideoById(vid);
     }
 
-    function stopLoop() {
-      clearTimeout(playTimer);
-      clearTimeout(pauseTimer);
-      player.pauseVideo();
-    }
-
     function startLoop() {
-      stopLoop();
+      if (!player || typeof player.playVideo !== "function") {
+        console.log("播放器尚未準備好，延後啟動");
+        pendingStart = true;
+        return;
+      }
 
       const playSec = Number(document.getElementById('playSeconds').value);
       const pauseSec = Number(document.getElementById('pauseSeconds').value);
+
+      clearTimeout(playTimer);
+      clearTimeout(pauseTimer);
 
       function playPhase() {
         player.playVideo();
@@ -88,7 +108,14 @@
 
       playPhase();
     }
+
+    function stopLoop() {
+      clearTimeout(playTimer);
+      clearTimeout(pauseTimer);
+      if (player && typeof player.pauseVideo === "function") {
+        player.pauseVideo();
+      }
+    }
   </script>
 </body>
 </html>
-
