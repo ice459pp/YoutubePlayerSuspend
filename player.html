@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>YouTube Interval Player</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { margin: 5px 0; padding: 6px; width: 300px; }
+    button { padding: 8px 16px; }
+  </style>
+</head>
+<body>
+  <h2>YouTube 區間播放工具</h2>
+
+  <label>YouTube 影片網址：</label><br>
+  <input id="urlInput" placeholder="貼上 YouTube 網址" /><br>
+
+  <label>播放秒數：</label><br>
+  <input id="playSeconds" type="number" value="2" /><br>
+
+  <label>停頓秒數：</label><br>
+  <input id="pauseSeconds" type="number" value="1" /><br>
+
+  <button onclick="loadVideo()">載入影片</button>
+
+  <div id="player" style="margin-top:20px;"></div>
+
+  <script>
+    let player;
+    let playTimer = null;
+    let pauseTimer = null;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: '',
+        events: {}
+      });
+    }
+
+    function extractVideoId(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname.includes('youtu.be')) return u.pathname.substring(1);
+        return u.searchParams.get('v');
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function loadVideo() {
+      const url = document.getElementById('urlInput').value;
+      const vid = extractVideoId(url);
+      if (!vid) { alert('網址無效'); return; }
+      player.loadVideoById(vid);
+      startLoop();
+    }
+
+    function startLoop() {
+      const playSec = Number(document.getElementById('playSeconds').value);
+      const pauseSec = Number(document.getElementById('pauseSeconds').value);
+
+      clearTimeout(playTimer);
+      clearTimeout(pauseTimer);
+
+      function playPhase() {
+        player.playVideo();
+        playTimer = setTimeout(() => {
+          player.pauseVideo();
+          pausePhase();
+        }, playSec * 1000);
+      }
+
+      function pausePhase() {
+        pauseTimer = setTimeout(() => {
+          playPhase();
+        }, pauseSec * 1000);
+      }
+
+      playPhase();
+    }
+  </script>
+</body>
+</html>
+
